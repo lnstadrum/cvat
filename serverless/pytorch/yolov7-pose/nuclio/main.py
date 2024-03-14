@@ -17,7 +17,7 @@ def init_context(context):
     weigths = torch.load('yolov7-w6-pose.pt', map_location=device)
     model = weigths['model'].float()
     model.eval()
-    if torch.cuda.is_available():
+    if device.type == "cuda":
         model = model.half().to(device)
     context.user_data.model = model
     context.user_data.device = device
@@ -54,7 +54,7 @@ def handler(context, event):
     image = torchvision.transforms.functional.pil_to_tensor(image).to(device).unsqueeze(0)
 
     # Preprocess the frame (you may need to customize this based on your model)
-    image = image.to(torch.float32) / 255
+    image = image.to(torch.float16 if device.type == "cuda" else torch.float32) / 255
     context.logger.info(f"Got an image: {image.shape}")
     h, w = image.shape[-2:]
     image = torch.nn.functional.pad(image, (0, 0, (w - h) // 2, (w - h) // 2))
