@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import numpy
 import torch
 import torchvision
 from PIL import Image
@@ -22,11 +23,8 @@ def init_context(context):
     context.user_data.device = device
 
     context.user_data.sublabels = [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
+        "neck",
+        "head",
         "L shoulder",
         "R shoulder",
         "L elbow",
@@ -42,6 +40,7 @@ def init_context(context):
     ]
 
     context.logger.info("Function initialized")
+
 
 def handler(context, event):
     context.logger.info("Run yolov7 pose estimation...")
@@ -71,9 +70,16 @@ def handler(context, event):
     for instance in prediction:
         pose = instance[7:].reshape(-1, 3)
 
+        # remove/merge unused points
+        pose = numpy.concatenate((
+            pose[0:1, :],
+            numpy.mean(pose[1:3, :], axis=0, keepdims=True),
+            pose[5:, :],
+        ))
+
         skeleton = {
             "type": "skeleton",
-            "label": "body",
+            "label": "Player",
             "elements": [{
                 "type": "points",
                 "label": label,
