@@ -11,9 +11,9 @@ from utils.plots import output_to_keypoint
 
 
 def init_context(context):
-    context.logger.info("Init detector...")
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    context.logger.info(f"Preparing model for device {device}")
+
     weigths = torch.load('yolov7-w6-pose.pt', map_location=device)
     model = weigths['model'].float()
     model.eval()
@@ -23,8 +23,7 @@ def init_context(context):
     context.user_data.device = device
 
     context.user_data.sublabels = [
-        "neck",
-        "head",
+        "nose",
         "L shoulder",
         "R shoulder",
         "L elbow",
@@ -43,7 +42,6 @@ def init_context(context):
 
 
 def handler(context, event):
-    context.logger.info("Run yolov7 pose estimation...")
     model : torch.nn.Module = context.user_data.model
     device = context.user_data.device
 
@@ -58,7 +56,7 @@ def handler(context, event):
     context.logger.info(f"Got an image: {image.shape}")
     h, w = image.shape[-2:]
     image = torch.nn.functional.pad(image, (0, 0, (w - h) // 2, (w - h) // 2))
-    image = torch.nn.functional.interpolate(image, scale_factor=1280.0 / w)
+    image = torch.nn.functional.interpolate(image, scale_factor=1280.0 / w, mode="bilinear")
 
     # Make predictions using the neural network
     with torch.no_grad():
@@ -66,16 +64,15 @@ def handler(context, event):
         prediction = non_max_suppression_kpt(prediction, 0.25, 0.65, nc=model.yaml['nc'], nkpt=model.yaml['nkpt'], kpt_label=True)
         prediction = output_to_keypoint(prediction)
 
+    if len(prediction.shape) != 2:
+        prediction = numpy.empty((0, 58))
+
     results = []
     for instance in prediction:
         pose = instance[7:].reshape(-1, 3)
 
-        # remove/merge unused points
-        pose = numpy.concatenate((
-            pose[0:1, :],
-            numpy.mean(pose[1:3, :], axis=0, keepdims=True),
-            pose[5:, :],
-        ))
+        # drop unused points
+        pose = numpy.concatenate((pose[0:1, :], pose[5:, :]))
 
         skeleton = {
             "type": "skeleton",
