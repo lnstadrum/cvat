@@ -920,7 +920,10 @@ class TrackManager(ObjectManager):
                         shape["attributes"].append(deepcopy_simple(attr))
 
                 if not prev_shape["outside"] or include_outside:
-                    shapes.extend(interpolate(prev_shape, shape))
+                    try:
+                        shapes.extend(interpolate(prev_shape, shape))
+                    except Exception as ex:
+                        raise ValueError(f"Frame {curr_frame}, track {track['id']}, shape {shape['id']}: {ex}")
 
             shape["keyframe"] = True
             shapes.append(shape)
