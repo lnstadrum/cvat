@@ -83,7 +83,7 @@ def handler(context, event):
                 "outside": 0 if point[2] > 0 else 1,
                 "points": [
                     point[0],
-                    point[1] - (w - h) // 2
+                    point[1] - (w - h) // 2 * (1280.0 / w)
                 ],
                 "confidence": str(point[2]),
             } for label, point in zip(context.user_data.sublabels, pose)],
