@@ -80,7 +80,8 @@ def handler(context, event):
             "elements": [{
                 "type": "points",
                 "label": label,
-                "outside": 0 if point[2] > 0 else 1,
+                "outside": bool(point[2] < 0.25),
+                "occluded": bool(point[2] < 0.5),
                 "points": [
                     point[0],
                     point[1] - (w - h) // 2 * (1280.0 / w)
