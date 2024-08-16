@@ -106,6 +106,7 @@ services:
       - '8123:8123'
 
   cvat_opa:
+    image: openpolicyagent/opa:edge-static
     ports:
       - '8181:8181'
 
